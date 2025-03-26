@@ -4,33 +4,41 @@ By James Lizamore
 
 Video overview: <URL HERE>
 
+---
+
 ## Scope
 
 ### Purpose
-* This database will be used to keep record of developer productivity over multiple projects
+* This database will be used to keep a record of developer productivity over multiple projects.
 
-### In scope:
-* Developers and their contribution to projects
-* Projects, including their start dates
-* Tickets, including what project they are relevant to and to which developer they were assigned
-* Re-assigned tickets, including who they were first assigned to and the reason the ticket was re-assigned
+### In Scope
+* Developers and their contributions to projects.
+* Projects, including their start dates.
+* Tickets, including what project they are associated with and which developer they are assigned to.
+* Re-assigned tickets, including who they were originally assigned to and the reason for re-assignment.
 
-### Out of scope:
-* Remote access to the database, a UI or dashboard and getting data directly from JIRA 
+### Out of Scope
+* Remote access to the database.
+* A user interface or dashboard.
+* Getting data directly from JIRA.
+
+---
 
 ## Functional Requirements
 
-In this section you should answer the following questions:
+* A user should be able to perform CRUD operations on all tables.
+* Users can utilize a stored procedure to simplify the process of re-assigning tickets.
+* The system must track:
+  - How many tickets each developer has worked on per project.
+  - The difficulty level of each ticket.
+  - The progress of each ticket (status: Open, In-progress, Resolved).
+  - The history of ticket reassignments.
 
-* A user should be able to perform CRUD operations on all tables 
-* Users can make use of the stored procedure to make re-assigning tickets easier
-* Tracking how many tickets each developer worked on for each project, how difficult each ticket is and the progress of each ticket
+---
 
 ## Representation
 
 ### Entities
-
-The database includes the following entities:
 
 #### Developers
 
@@ -48,6 +56,7 @@ The `developers` table includes:
   - A `VARCHAR(50)` column that stores the developer’s email address.  
   - This column is required (`NOT NULL`).
 
+---
 
 #### Projects
 
@@ -71,8 +80,10 @@ The `projects` table includes:
   - A `TIMESTAMP` column that represents the official start time of the project.
 
 * **`actual_start`**  
-  - A `TIMESTAMP` column that represents when the project actually began. Developers may actually start on the project before the official start date for productivity's sake
+  - A `TIMESTAMP` column that represents when the project actually began.  
+  - *Note:* Developers may actually start on the project before the official start date to boost productivity.
 
+---
 
 #### Tickets
 
@@ -103,12 +114,15 @@ The `tickets` table includes:
 * **`status`**  
   - An `ENUM ('Open', 'In-progress', 'Resolved')` column that represents the current status of the ticket.
 
+---
+
 #### Reassigned
 
 The `reassigned` table includes:
 
 * **`ticket_id`**  
-  - An unsigned integer representing the ticket that was re-assigned.
+  - An unsigned integer representing the ticket that was re-assigned.  
+  - This column has a foreign key constraint referencing the `id` column in the `tickets` table.
 
 * **`changed_from`**  
   - An unsigned integer that stores the ID of the developer from whom the ticket was re-assigned.  
@@ -121,6 +135,7 @@ The `reassigned` table includes:
 * **`reason`**  
   - A `TEXT` column that captures the reason behind the re-assignment.
 
+---
 
 ### Relationships
 
@@ -128,18 +143,41 @@ The `reassigned` table includes:
 
 As detailed by the diagram:
 
-* One developer can be assigned many tickets or not yet have any tickets assigned to them.
-* A project can have many tickets or not yet contain any tickets.
-* A ticket can only be assigned to one developer and a ticket can only be part of one project.
-* A re-assigned ticket contains who it was first assigned to and who it assigned to now.
+* One developer can be assigned many tickets (or none at all).
+* A project can have many tickets (or none yet).
+* A ticket is assigned to one developer and is associated with one project.
+* A re-assigned ticket records the developer it was originally assigned to and the developer it is assigned to now, along with the reason for the change.
+
+---
 
 ## Optimizations
 
-* Typically, a user would like to see an overview of how tickets, projects and developers relate to one another, hence the creation of the `dev_summary` view.
-* Stored procedure for re-assigning tickets is more convenient than manually updating the ticket table and adding record of changes to the `reassigned` table.
+* **Views:**  
+  - The `dev_summary` view aggregates key metrics (e.g., total tickets, status breakdown, and reassignment counts) to give an overview of developer productivity.
+  
+* **Stored Procedures:**  
+  - The `reassign_ticket` stored procedure encapsulates the logic for updating ticket assignments and logging reassignments, ensuring consistency and simplifying operations.
+  
+* **Indexes:**  
+  - Indexes have been added to the `tickets` table on the `assignee`, `project`, and `status` columns to speed up queries.  
+    - **`idx_tickets_assignee`** helps with queries filtering by developer.  
+    - **`idx_tickets_project`** optimizes lookups by project.  
+    - **`idx_tickets_status`** supports queries filtering by ticket status (though note that low-cardinality columns like `status` may not always benefit significantly from indexing).  
+  - The design anticipates more reads than writes, which makes these indexes beneficial for performance.
+
+---
 
 ## Limitations
 
-* The current schema assumes tickets may only be assigned to one developer at a time. Assigning one ticket to multiple developers may require adjustments in the future
-* Software often has many unforeseen complications which may need more context 
-* In the future I would like to add audit logging and deadlines for tickets and projects
+* The current schema assumes that each ticket is assigned to only one developer at a time. If a ticket needs to be assigned to multiple developers, the schema will need adjustment.
+* The system does not currently support audit logging beyond the basic re-assignment records.
+* There is no support for deadlines or priority levels on tickets or projects.
+* Future enhancements might include:
+  - More detailed audit logging (e.g., tracking changes with timestamps).
+  - Adding deadlines, priorities, or additional context for tickets.
+  - Enhancing the UI/dashboard for easier data visualization and interaction.
+
+---
+
+
+

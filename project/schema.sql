@@ -37,6 +37,7 @@ CREATE TABLE reassigned
     changed_from INT UNSIGNED,
     changed_to   INT UNSIGNED,
     reason       TEXT,
+    FOREIGN KEY (ticket_id) REFERENCES tickets(id),
     FOREIGN KEY (changed_from) REFERENCES developers (id),
     FOREIGN KEY (changed_to) REFERENCES developers (id)
 );
@@ -82,3 +83,7 @@ FROM developers d
          LEFT JOIN tickets t
                    ON d.id = t.assignee
 GROUP BY d.id, d.name;
+
+CREATE INDEX idx_tickets_assignee ON tickets (assignee);
+CREATE INDEX idx_tickets_project ON tickets (project);
+CREATE INDEX idx_tickets_status ON tickets (status);
